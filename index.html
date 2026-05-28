@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五年级数学勇者挑战赛 - 纯数学版</title>
+    <style>
+        :root {
+            --primary-color: #34495e;
+            --secondary-color: #d35400;
+            --accent-color: #27ae60;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #quiz-container {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            max-width: 650px;
+            width: 100%;
+            padding: 35px;
+            text-align: center;
+        }
+
+        h1 { color: var(--primary-color); margin-bottom: 10px; font-size: 24px; }
+        .subtitle { color: #95a5a6; margin-bottom: 30px; }
+
+        #progress-container {
+            width: 100%;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-color);
+            border-radius: 6px;
+            transition: width 0.4s ease-out;
+        }
+
+        .question-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            min-height: 50px;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 500px) { .options { grid-template-columns: 1fr; } }
+
+        .option-btn {
+            background: #fff;
+            border: 2px solid #bdc3c7;
+            padding: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s;
+            color: #34495e;
+        }
+
+        .option-btn:hover { border-color: #3498db; background: #f0f7fd; transform: translateY(-2px); }
+        .option-btn.correct { background: #e8f6e9; border-color: #2ecc71; color: #27ae60; font-weight: bold; }
+        .option-btn.wrong { background: #fdeaea; border-color: #e74c3c; color: #c0392b; }
+
+        #feedback {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        #next-btn {
+            margin-top: 30px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 12px 45px;
+            font-size: 1.1em;
+            border-radius: 30px;
+            cursor: pointer;
+            display: none;
+            transition: opacity 0.2s;
+        }
+
+        #next-btn:hover { opacity: 0.9; }
+
+        #result-screen { display: none; }
+        .final-score { font-size: 4.5em; font-weight: bold; color: var(--accent-color); margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <div id="game-screen">
+        <h1>🛡️ 数学勇者挑战赛</h1>
+        <p class="subtitle">老师你好！请开始你的智慧闯关任务</p>
+        
+        <div id="progress-container"><div id="progress-bar"></div></div>
+
+        <div class="question-box">
+            <div id="question" class="question-text">加载中...</div>
+            <div id="options" class="options"></div>
+        </div>
+
+        <div id="feedback"></div>
+        <button id="next-btn">下一关</button>
+    </div>
+
+    <div id="result-screen">
+        <h1>✨ 勇者归来 ✨</h1>
+        <p>你已经成功通过了所有数学考研！</p>
+        <div class="final-score" id="score-display">0</div>
+        <p id="eval-text" style="font-size: 1.1em; color: #7f8c8d;"></p>
+        <button onclick="location.reload()" style="background: var(--primary-color); color: white; border: none; padding: 15px 45px; border-radius: 30px; cursor: pointer; margin-top: 25px; font-size: 1em;">再次挑战</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            q: "在数字王国的「单数森林」里，哪一组数字全都是奇数？",
+            a: ["1, 3, 5, 27, 49", "2, 4, 6, 30, 78", "10, 20, 30, 40", "7, 13, 21, 64"],
+            c: 0,
+            r: "奇数的个位必须是 1, 3, 5, 7, 9。首战告捷！"
+        },
+        {
+            q: "数字「0」在数学分类中应该属于哪一边？",
+            a: ["奇数", "偶数", "既非奇也非偶", "质数"],
+            c: 1,
+            r: "因为 0 能被 2 整除，所以在整数体系中它被归类为偶数。"
+        },
+        {
+            q: "要分辨 91,558 是奇数还是偶数，观察哪个数位最快？",
+            a: ["万位", "个位", "千位", "百位"],
+            c: 1,
+            r: "只需看个位数。这里个位是 8，所以它是偶数。"
+        },
+        {
+            q: "估算：全校1495人每人需8张纸，一包纸500张，大约需要几包？",
+            a: ["3 包", "10 包", "24 包", "50 包"],
+            c: 2,
+            r: "1495 × 8 ≈ 12,000，12,000 ÷ 500 = 24 包。非常精准的估算！"
+        },
+        {
+            q: "找出 23,956 的「万位近似值」。",
+            a: ["20,000", "30,000", "23,000", "24,000"],
+            c: 0,
+            r: "万位近似值看千位，3 小于 5 不进位，所以是 20,000。"
+        },
+        {
+            q: "哪一个数目的「千位近似值」是 82,000？",
+            a: ["82,776", "82,009", "81,499", "82,501"],
+            c: 1,
+            r: "82,009 的百位是 0，四舍五入后千位保持 2 不变。"
+        },
+        {
+            q: "将 79,998 取「千位近似值」后是多少？",
+            a: ["79,000", "80,000", "79,900", "81,000"],
+            c: 1,
+            r: "百位 9 进位给千位，千位 9 变 10 再次进位给万位，变成 80,000。"
+        },
+        {
+            q: "数轴规律：11,259, 11,261, 11,263, ( )。括号里填什么？",
+            a: ["11,264", "11,265", "11,270", "11,262"],
+            c: 1,
+            r: "这是以 2 为间隔递增的奇数列。11,263 + 2 = 11,265。"
+        },
+        {
+            q: "将 95,070, 96,821, 93,600 从大到小排列，第一位是谁？",
+            a: ["95,070", "96,821", "93,600", "92,000"],
+            c: 1,
+            r: "万位相同看千位，6 > 5 > 3，所以 96,821 是最大的。"
+        },
+        {
+            q: "比较 95,070 和 95,031 时，从哪个数位开始出现不同？",
+            a: ["万位", "千位", "十位", "百位"],
+            c: 2,
+            r: "万、千、百位都一样，直到十位的 7 和 3 才有区别。"
+        },
+        {
+            q: "【数学陷阱】对于数目 64,521，以下哪个近似值的计算是【错误】的？",
+            a: ["十位近似值：64,520", "百位近似值：64,500", "千位近似值：65,000", "万位近似值：70,000"],
+            c: 3,
+            r: "万位近似值应看千位(4)，不进位。所以应是 60,000 而不是 70,000。"
+        },
+        {
+            q: "【终极任务】我的「千位近似值」是 30,000，且我是一个「奇数」。我是谁？",
+            a: ["29,851", "30,501", "29,499", "30,002"],
+            c: 0,
+            r: "29,851 百位 8 进位变 30,000，个位 1 是奇数。恭喜满分通关！"
+        }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    const questionEl = document.getElementById('question');
+    const optionsEl = document.getElementById('options');
+    const feedbackEl = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const progressBar = document.getElementById('progress-bar');
+
+    function loadQ() {
+        const qData = questions[currentIdx];
+        questionEl.innerText = `${currentIdx + 1}. ${qData.q}`;
+        optionsEl.innerHTML = '';
+        feedbackEl.style.display = 'none';
+        nextBtn.style.display = 'none';
+        progressBar.style.width = `${(currentIdx / questions.length) * 100}%`;
+
+        qData.a.forEach((text, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = text;
+            btn.onclick = () => select(i);
+            optionsEl.appendChild(btn);
+        });
+    }
+
+    function select(idx) {
+        const qData = questions[currentIdx];
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach(b => b.disabled = true);
+
+        feedbackEl.style.display = 'block';
+
+        if(idx === qData.c) {
+            btns[idx].classList.add('correct');
+            feedbackEl.innerHTML = `✅ <b>正确答案！</b><br>${qData.r}`;
+            feedbackEl.style.background = "#e8f6e9";
+            feedbackEl.style.color = "#27ae60";
+            score++;
+        } else {
+            btns[idx].classList.add('wrong');
+            btns[qData.c].classList.add('correct');
+            feedbackEl.innerHTML = `❌ <b>再思考一下：</b><br>${qData.r}`;
+            feedbackEl.style.background = "#fdeaea";
+            feedbackEl.style.color = "#c0392b";
+        }
+        nextBtn.style.display = 'inline-block';
+    }
+
+    nextBtn.onclick = () => {
+        currentIdx++;
+        if(currentIdx < questions.length) {
+            loadQ();
+        } else {
+            showFinal();
+        }
+    };
+
+    function showFinal() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('score-display').innerText = `${score} / ${questions.length}`;
+        const eval = document.getElementById('eval-text');
+        
+        if(score === 12) eval.innerText = "你是数学王国的传奇勇者，逻辑思维无懈可击！";
+        else if(score >= 9) eval.innerText = "非常优秀！你对大数和近似值的掌握非常纯熟。";
+        else if(score >= 6) eval.innerText = "不错哦，继续加油，多注意近似值的进位细节。";
+        else eval.innerText = "不要气馁，再多复习一下课本，下次一定能成功！";
+    }
+
+    loadQ();
+</script>
+
+</body>
+</html>
